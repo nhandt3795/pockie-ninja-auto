@@ -76,3 +76,35 @@ test('konoha bountique', async ({ page }) => {
     } 
   }
 });
+
+test('konoha bountique try your luck', async ({ page }) => {
+  test.setTimeout(0);
+  await page.locator("//div[text()='Max bet']/parent::button[not(contains(@class,'--disabled'))]").waitFor('visible')
+  await page.waitForTimeout(10000);
+  while (true) {
+    await page.locator("//div[text()='Max bet']/parent::button[not(contains(@class,'--disabled'))]").click({timeout: 200000});
+    await page.waitForTimeout(1000)
+    await page.locator("//div[text()='Buy Coins']/parent::button[contains(@class,'--default')]").waitFor('visible')
+    const claimBonusButton = page.locator("//button[contains(@class,'theme__button--dark') and text()='Claim Bonus']");
+    const doubleChance = page.locator("//button[contains(@class,'theme__button--dark') and text()='Double Chance']");
+    
+    if(await doubleChance.isVisible({timeout: 5000})) {
+      await doubleChance.click();
+      await page.locator("//div[text()='Claim']/parent::button[contains(@class,'--default')]").click();
+      await page.locator("//pre[text()='Are you sure want to claim your collected coins so far?']/ancestor::div[@class='panel--dark']//button[text()='Accept']").click();
+      await page.locator("//div[text()='Ok']/parent::button[contains(@class,'--default')]").click();
+    }
+
+    if(await claimBonusButton.isVisible({timeout: 5000})) {
+      await claimBonusButton.click();
+      const boxes = await page.locator("//img[contains(@src,'box_close.png')]/parent::button[not(contains(@class,'--disabled'))]").all();
+      await boxes[0].click();
+      await page.waitForTimeout(3000);
+      await boxes[1].click();
+      await page.waitForTimeout(3000);
+      await boxes[2].click();
+      await page.waitForTimeout(3000);
+      await page.locator("//div[text()='Ok']/parent::button[contains(@class,'--default')]").click();
+    } 
+  }
+});
