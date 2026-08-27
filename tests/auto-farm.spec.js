@@ -82,7 +82,7 @@ test('konoha bountique try your luck', async ({ page }) => {
   await page.locator("//div[text()='Max bet']/parent::button[not(contains(@class,'--disabled'))]").waitFor('visible')
   await page.waitForTimeout(10000);
   while (true) {
-    await page.locator("//div[text()='Max bet']/parent::button[not(contains(@class,'--disabled'))]").click({timeout: 200000});
+    await page.locator("//div[text()='Try your luck']/parent::button[not(contains(@class,'--disabled'))]").click({timeout: 200000});
     await page.waitForTimeout(1000)
     await page.locator("//div[text()='Buy Coins']/parent::button[contains(@class,'--default')]").waitFor('visible')
     const claimBonusButton = page.locator("//button[contains(@class,'theme__button--dark') and text()='Claim Bonus']");
