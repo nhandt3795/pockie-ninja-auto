@@ -5,6 +5,7 @@ async function clickIfVisible(locator, timeout = 5000) {
   }
 }
 test.beforeEach(async ({ page }) => {
+  test.setTimeout(0);
   await page.goto('https://pockieninja.online/')
   await page.locator("div.button.start-button").click()
   const [newWindow] = await Promise.all([
@@ -17,12 +18,16 @@ test.beforeEach(async ({ page }) => {
   await newWindow.locator("input[name='Passwd']").fill(process.env.PASSWORD)
   await newWindow.locator("//span[text()='Next']/ancestor::button").last().click()
   await newWindow.waitForTimeout(1000)
+  await page.locator("//div[text()='Modified']/parent::div").click({timeout: 200000})
 })
 test('slot machine', async ({ page }) => {
   test.setTimeout(0);
   while (true) {
-    await page.locator('button.slot-machine__challenge-btn.--default').click({timeout: 200000});
-    await page.locator("//b[text()='Combat Results']/ancestor::div[@class='panel--dark']//button[text()='Close']").click({timeout: 200000});
+    await page.locator('button.slot-machine__challenge-btn.--default').click({timeout: 500000});
+    if (await page.locator("//div[contains(@style,'display: flex;')]/div[text()='Not enough energy.']").isVisible({timeout: 5000})) {
+      break
+    }
+    await page.locator("//b[text()='Combat Results']/ancestor::div[@class='panel--dark']//button[text()='Close']").click({timeout: 500000});
     const notify = page.locator('//pre[contains(text(),"You obtained")]/ancestor::div[@class="panel--dark"]//button[text()="Close"]')
     await page.waitForTimeout(2000)
     await clickIfVisible(notify);
@@ -49,45 +54,20 @@ test('farm demon', async ({ page }) => {
 
 test('konoha bountique', async ({ page }) => {
   test.setTimeout(0);
-  while (true) {
-    await page.locator("//div[text()='Max bet']/parent::button[not(contains(@class,'--disabled'))]").click({timeout: 200000});
-    await page.waitForTimeout(1000)
-    await page.locator("//div[text()='Buy Coins']/parent::button[contains(@class,'--default')]").waitFor('visible')
-    const claimBonusButton = page.locator("//button[contains(@class,'theme__button--dark') and text()='Claim Bonus']");
-    const doubleChance = page.locator("//button[contains(@class,'theme__button--dark') and text()='Double Chance']");
-    
-    if(await doubleChance.isVisible({timeout: 5000})) {
-      await doubleChance.click();
-      await page.locator("//div[text()='Claim']/parent::button[contains(@class,'--default')]").click();
-      await page.locator("//pre[text()='Are you sure want to claim your collected coins so far?']/ancestor::div[@class='panel--dark']//button[text()='Accept']").click();
-      await page.locator("//div[text()='Ok']/parent::button[contains(@class,'--default')]").click();
-    }
-
-    if(await claimBonusButton.isVisible({timeout: 5000})) {
-      await claimBonusButton.click();
-      const boxes = await page.locator("//img[contains(@src,'box_close.png')]/parent::button[not(contains(@class,'--disabled'))]").all();
-      await boxes[0].click();
-      await page.waitForTimeout(3000);
-      await boxes[1].click();
-      await page.waitForTimeout(3000);
-      await boxes[2].click();
-      await page.waitForTimeout(3000);
-      await page.locator("//div[text()='Ok']/parent::button[contains(@class,'--default')]").click();
-    } 
-  }
-});
-
-test('konoha bountique try your luck', async ({ page }) => {
-  test.setTimeout(0);
   await page.locator("//div[text()='Max bet']/parent::button[not(contains(@class,'--disabled'))]").waitFor('visible')
   await page.waitForTimeout(10000);
   while (true) {
     await page.locator("//div[text()='Try your luck']/parent::button[not(contains(@class,'--disabled'))]").click({timeout: 200000});
     await page.waitForTimeout(1000)
     await page.locator("//div[text()='Buy Coins']/parent::button[contains(@class,'--default')]").waitFor('visible')
+    const freeCoins = page.locator("//div[text()='Free coins']/parent::button[not(contains(@class,'--disabled'))]");
     const claimBonusButton = page.locator("//button[contains(@class,'theme__button--dark') and text()='Claim Bonus']");
     const doubleChance = page.locator("//button[contains(@class,'theme__button--dark') and text()='Double Chance']");
     
+    if(await freeCoins.isVisible()) {
+      await freeCoins.click();
+    }
+
     if(await doubleChance.isVisible({timeout: 5000})) {
       await doubleChance.click();
       await page.locator("//div[text()='Claim']/parent::button[contains(@class,'--default')]").click();
@@ -99,12 +79,152 @@ test('konoha bountique try your luck', async ({ page }) => {
       await claimBonusButton.click();
       const boxes = await page.locator("//img[contains(@src,'box_close.png')]/parent::button[not(contains(@class,'--disabled'))]").all();
       await boxes[0].click();
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(1000);
       await boxes[1].click();
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(1000);
       await boxes[2].click();
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(1000);
       await page.locator("//div[text()='Ok']/parent::button[contains(@class,'--default')]").click();
     } 
   }
 });
+
+test('Quest kill', async ({ page }) => {
+  test.setTimeout(0);
+  while (true) {
+    await page.locator("//b[text()='Quest Navigation']/ancestor::div[@class='panel--dark']//button[text()='Go' and not(@disabled)]").click({timeout: 200000});
+    await page.locator("//b[text()='Combat Results']/ancestor::div[@class='panel--dark']//button[text()='Close']").click({timeout: 200000});
+    await page.waitForTimeout(2000)
+  }
+})
+
+
+test('Tailed beast', async ({ page }) => {
+  test.setTimeout(0);
+  const autoMode = false;
+  const maxTurns = 100;
+  await page.locator('#tailed-beast-map-container canvas').waitFor('visible', {timeout: 500000})
+  let lastInputtedBeast = '1'
+  let count = 0
+  let currentBeast = '1'
+  while(true) {
+    let position
+    await expect(page.locator('input.chat-field')).toHaveValue(/.+/, {timeout: 20000});
+    const inputtedBeast = await page.locator('input.chat-field').getAttribute('value');
+    if (inputtedBeast !== lastInputtedBeast) {
+      lastInputtedBeast = inputtedBeast;
+      currentBeast = inputtedBeast;
+      count = 0;
+    }
+    if (autoMode && count > maxTurns && inputtedBeast === lastInputtedBeast && parseInt(currentBeast) < 9) {
+      currentBeast = (parseInt(currentBeast) + 1).toString();
+      count = 0;
+    } else {
+      count++;
+    }
+    switch(currentBeast) {
+      case '1':
+        position = { x: 720, y: 412 }
+        break;
+      case '2':
+        position = { x: 148, y: 245 }
+        break;
+      case '3':
+        position = { x: 741, y: 159 }
+        break;
+      case '4':
+        position = { x: 589, y: 304 }
+        break;
+      case '5':
+        position = { x: 849, y: 307 }
+        break;
+      case '6':
+        position = { x: 380, y: 306 }
+        break;
+      case '7':
+        position = { x: 425, y: 158 }
+        break;
+      case '8':
+        position = { x: 433, y: 424 }
+        break;
+      case '9':
+        position = { x: 143, y: 457 }
+        break;
+      default:
+        console.log('Unknown beast:', currentBeast);
+        return;
+    }
+    await page.locator('#tailed-beast-map-container canvas').click({
+    position: position
+  });
+    await page.getByRole('button', { name: 'Fight' }).first().click();
+    await page.getByRole('button', { name: 'Close' }).click();
+    console.log(`Killed ${currentBeast}-tailed beast ${count} times`);
+  }
+})
+
+test('Tailed beast 2', async ({ page }) => {
+  test.setTimeout(0);
+  await page.locator('#tailed-beast-map-container canvas').waitFor('visible', {timeout: 500000})
+  let currentBeast = '1'
+  let lastInputtedBeast = '1'
+  let count = 0
+  let totalCount = 0
+  while(true) {
+    let position
+    await expect(page.locator('input.chat-field')).toHaveValue(/.+/, {timeout: 20000})
+    const inputtedBeast = await page.locator('input.chat-field').getAttribute('value')
+    if (inputtedBeast !== lastInputtedBeast) {
+      currentBeast = inputtedBeast
+      lastInputtedBeast = inputtedBeast
+      count = 0
+    }
+    switch(currentBeast) {
+      case '1':
+        position = { x: 720, y: 412 }
+        break;
+      case '2':
+        position = { x: 148, y: 245 }
+        break;
+      case '3':
+        position = { x: 741, y: 159 }
+        break;
+      case '4':
+        position = { x: 589, y: 304 }
+        break;
+      case '5':
+        position = { x: 849, y: 307 }
+        break;
+      case '6':
+        position = { x: 380, y: 306 }
+        break;
+      case '7':
+        position = { x: 425, y: 158 }
+        break;
+      case '8':
+        position = { x: 433, y: 424 }
+        break;
+      case '9':
+        position = { x: 143, y: 457 }
+        break;
+      default:
+        console.log('Unknown beast:', currentBeast);
+        return;
+    }
+    await page.locator('#tailed-beast-map-container canvas').click({
+    position: position
+    });
+    if(await page.getByRole('button', { name: 'Fight' }).first().isVisible({timeout: 2000})) {
+      await page.getByRole('button', { name: 'Fight' }).first().click()
+      await page.getByRole('button', { name: 'Close' }).click()
+      count++
+      totalCount++
+      console.log(`Killed ${currentBeast}-tailed beast ${count} times`)
+      console.log(`Total kills: ${totalCount}`)
+    } else {
+      if (parseInt(currentBeast) < 9){
+        currentBeast = (parseInt(currentBeast) + 1).toString();
+      }
+    }
+  }
+})
